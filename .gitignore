@@ -6,6 +6,9 @@
 *.pt
 *.spec.pt
 *.tsv
+*.log
+piper_training_work/
+piper_dataset_por_voz/
 
 # Python virtual environment
 .venv/
