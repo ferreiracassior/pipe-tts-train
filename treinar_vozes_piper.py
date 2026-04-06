@@ -2,12 +2,16 @@ import argparse
 import csv
 import json
 import os
+import select
 import signal
 import shlex
 import shutil
 import subprocess
 import sys
+import termios
 import time
+import urllib.request
+import tty
 from datetime import datetime
 from pathlib import Path
 
@@ -79,6 +83,7 @@ def print_dashboard(stats: dict, ranking: list[tuple[str, int]]) -> None:
     print(f"Voz atual..............: {stats['current_voice']}")
     print(f"Status voz.............: {stats['current_stage']} {stats.get('stage_spinner', '')}".rstrip())
     print(f"Tempo da etapa.........: {stats.get('stage_elapsed', '00:00:00')}")
+    print("Controles..............: [n] próximo passo | [q] sair")
     if stats.get("last_log_file"):
         print(f"Log atual..............: {stats['last_log_file']}")
     if stats.get("last_error"):
@@ -112,10 +117,10 @@ def run_cmd(
     log_file: Path | None = None,
     timeout_seconds: int | None = None,
     allow_ctrl_c_continue: bool = False,
-) -> tuple[int, bool, bool]:
+) -> tuple[int, bool, bool, str | None]:
     if dry_run:
         print(f"[dry-run] {cmd}")
-        return 0, False, False
+        return 0, False, False, None
 
     if log_file is not None:
         log_file.parent.mkdir(parents=True, exist_ok=True)
@@ -123,72 +128,108 @@ def run_cmd(
     spinner = ["|", "/", "-", "\\"]
     start = time.time()
 
-    with (log_file.open("a", encoding="utf-8") if log_file else open(os.devnull, "w", encoding="utf-8")) as out:
-        out.write(f"\n[{datetime.now().isoformat()}] CMD: {cmd}\n")
-        out.flush()
+    def stop_process(proc: subprocess.Popen, graceful_timeout: int = 20) -> int:
+        try:
+            proc.send_signal(signal.SIGINT)
+        except Exception:
+            pass
 
-        process = subprocess.Popen(
-            cmd,
-            shell=True,
-            env=env,
-            stdout=out,
-            stderr=subprocess.STDOUT,
-            text=True,
-        )
+        try:
+            proc.wait(timeout=graceful_timeout)
+        except KeyboardInterrupt:
+            # Segundo Ctrl+C: força encerramento imediato sem traceback.
+            proc.kill()
+            proc.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait(timeout=10)
 
-        tick = 0
-        while True:
-            try:
-                code = process.poll()
-                elapsed = int(time.time() - start)
+        return proc.returncode or 130
 
-                if timeout_seconds is not None and elapsed >= timeout_seconds and code is None:
+    old_tty_mode = None
+    if sys.stdin.isatty():
+        try:
+            fd = sys.stdin.fileno()
+            old_tty_mode = termios.tcgetattr(fd)
+            tty.setcbreak(fd)
+        except Exception:
+            old_tty_mode = None
+
+    try:
+        with (log_file.open("a", encoding="utf-8") if log_file else open(os.devnull, "w", encoding="utf-8")) as out:
+            out.write(f"\n[{datetime.now().isoformat()}] CMD: {cmd}\n")
+            out.flush()
+
+            process = subprocess.Popen(
+                cmd,
+                shell=True,
+                env=env,
+                stdout=out,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+
+            tick = 0
+            while True:
+                try:
+                    code = process.poll()
+                    elapsed = int(time.time() - start)
+
+                    if old_tty_mode is not None:
+                        try:
+                            ready, _, _ = select.select([sys.stdin], [], [], 0)
+                            if ready:
+                                key = sys.stdin.read(1).lower()
+                                if key == "n":
+                                    out.write(
+                                        f"[{datetime.now().isoformat()}] INFO: tecla 'n' detectada. Avançando para o próximo passo.\n"
+                                    )
+                                    out.flush()
+                                    return stop_process(process), False, True, "next"
+                                if key == "q":
+                                    out.write(
+                                        f"[{datetime.now().isoformat()}] INFO: tecla 'q' detectada. Encerrando execução.\n"
+                                    )
+                                    out.flush()
+                                    return stop_process(process), False, True, "quit"
+                        except Exception:
+                            pass
+
+                    if timeout_seconds is not None and elapsed >= timeout_seconds and code is None:
+                        out.write(
+                            f"[{datetime.now().isoformat()}] INFO: limite de tempo atingido ({timeout_seconds}s). Encerrando treino.\n"
+                        )
+                        out.flush()
+                        return stop_process(process), True, False, None
+
+                    if stats is not None:
+                        stats["stage_elapsed"] = format_seconds(elapsed)
+                        stats["stage_spinner"] = spinner[tick % len(spinner)]
+                        if log_file is not None:
+                            stats["last_log_file"] = str(log_file)
+                        if ranking is not None:
+                            print_dashboard(stats, ranking)
+
+                    if code is not None:
+                        return code, False, False, None
+
+                    tick += 1
+                    time.sleep(1)
+                except KeyboardInterrupt:
+                    if not allow_ctrl_c_continue:
+                        return stop_process(process), False, True, "quit"
+
                     out.write(
-                        f"[{datetime.now().isoformat()}] INFO: limite de tempo atingido ({timeout_seconds}s). Encerrando treino.\n"
+                        f"[{datetime.now().isoformat()}] INFO: Ctrl+C detectado. Encerrando treino atual e seguindo para export.\n"
                     )
                     out.flush()
-                    process.send_signal(signal.SIGINT)
-                    try:
-                        process.wait(timeout=20)
-                    except subprocess.TimeoutExpired:
-                        process.kill()
-                        process.wait(timeout=10)
-                    return process.returncode or 130, True, False
-
-                if stats is not None:
-                    stats["stage_elapsed"] = format_seconds(elapsed)
-                    stats["stage_spinner"] = spinner[tick % len(spinner)]
-                    if log_file is not None:
-                        stats["last_log_file"] = str(log_file)
-                    if ranking is not None:
-                        print_dashboard(stats, ranking)
-
-                if code is not None:
-                    return code, False, False
-
-                tick += 1
-                time.sleep(1)
-            except KeyboardInterrupt:
-                if not allow_ctrl_c_continue:
-                    process.send_signal(signal.SIGINT)
-                    try:
-                        process.wait(timeout=20)
-                    except subprocess.TimeoutExpired:
-                        process.kill()
-                        process.wait(timeout=10)
-                    return process.returncode or 130, False, True
-
-                out.write(
-                    f"[{datetime.now().isoformat()}] INFO: Ctrl+C detectado. Encerrando treino atual e seguindo para export.\n"
-                )
-                out.flush()
-                process.send_signal(signal.SIGINT)
-                try:
-                    process.wait(timeout=20)
-                except subprocess.TimeoutExpired:
-                    process.kill()
-                    process.wait(timeout=10)
-                return process.returncode or 130, False, True
+                    return stop_process(process), False, True, "next"
+    finally:
+        if old_tty_mode is not None:
+            try:
+                termios.tcsetattr(sys.stdin.fileno(), termios.TCSADRAIN, old_tty_mode)
+            except Exception:
+                pass
 
 
 def render_cmd(template: str, values: dict) -> str:
@@ -262,6 +303,83 @@ def detect_torch_gpu(env: dict) -> tuple[bool, str]:
     return False, out or (result.stderr or "").strip()
 
 
+def detect_resume_flag(env: dict) -> str:
+    help_cmd = [sys.executable, "-m", "piper_train", "--help"]
+    result = subprocess.run(help_cmd, check=False, env=env, capture_output=True, text=True)
+    help_text = f"{result.stdout}\n{result.stderr}"
+    if "--resume_from_checkpoint" in help_text:
+        return "--resume_from_checkpoint"
+    if "--ckpt_path" in help_text:
+        return "--ckpt_path"
+    return ""
+
+
+def has_silero_vad_model(env: dict) -> tuple[bool, str]:
+    code = (
+        "from pathlib import Path; "
+        "import piper_train, sys; "
+        "model = Path(piper_train.__file__).resolve().parent / 'norm_audio' / 'models' / 'silero_vad.onnx'; "
+        "print(str(model)); "
+        "sys.exit(0 if model.exists() else 1)"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        check=False,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    path = (result.stdout or "").strip()
+    return result.returncode == 0, path
+
+
+def ensure_silero_vad_model(env: dict) -> tuple[bool, str]:
+    ok, model_path_str = has_silero_vad_model(env)
+    if ok:
+        return True, model_path_str
+
+    model_path = Path(model_path_str) if model_path_str else None
+    if model_path is None:
+        return False, "caminho do silero_vad.onnx não pôde ser determinado"
+
+    model_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Fonte preferencial: pacote silero-vad instalado no mesmo ambiente.
+    silero_data_path = (
+        Path(sys.prefix)
+        / "lib"
+        / f"python{sys.version_info.major}.{sys.version_info.minor}"
+        / "site-packages"
+        / "silero_vad"
+        / "data"
+        / "silero_vad.onnx"
+    )
+    if silero_data_path.exists():
+        try:
+            shutil.copyfile(silero_data_path, model_path)
+            if model_path.exists() and model_path.stat().st_size > 0:
+                return True, str(model_path)
+        except Exception as exc:
+            return False, f"falha ao copiar silero_vad.onnx do pacote silero-vad: {exc}"
+
+    urls = [
+        "https://github.com/snakers4/silero-vad/raw/main/files/silero_vad.onnx",
+        "https://raw.githubusercontent.com/snakers4/silero-vad/main/files/silero_vad.onnx",
+    ]
+
+    last_error = ""
+    for url in urls:
+        try:
+            urllib.request.urlretrieve(url, str(model_path))
+            if model_path.exists() and model_path.stat().st_size > 0:
+                return True, str(model_path)
+            last_error = f"download sem conteúdo válido de {url}"
+        except Exception as exc:
+            last_error = f"falha ao baixar de {url}: {exc}"
+
+    return False, last_error or "falha ao obter silero_vad.onnx"
+
+
 def discover_voices(dataset_root: Path) -> list[tuple[str, Path, int]]:
     voices = []
     for voice_dir in sorted(dataset_root.glob("voice_*")):
@@ -305,8 +423,102 @@ def save_ranking_csv(output_file: Path, ranking: list[tuple[str, int]]) -> None:
             writer.writerow([voice_id, lines])
 
 
+def has_preprocessed_dataset(voice_work_dir: Path) -> bool:
+    return (voice_work_dir / "dataset.jsonl").exists() and (voice_work_dir / "config.json").exists()
+
+
+def log_has_timeout_marker(log_file: Path) -> bool:
+    if not log_file.exists():
+        return False
+    try:
+        with log_file.open("r", encoding="utf-8", errors="replace") as f:
+            for line in f:
+                if "limite de tempo atingido" in line:
+                    return True
+    except OSError:
+        return False
+    return False
+
+
+def checkpoint_epoch_reached(checkpoint_path: Path | None, max_epochs: int) -> bool:
+    if checkpoint_path is None:
+        return False
+
+    try:
+        # Carrega só metadados do checkpoint para verificar avanço de época.
+        import torch  # type: ignore
+
+        ckpt = torch.load(checkpoint_path, map_location="cpu")
+        epoch = ckpt.get("epoch")
+        if isinstance(epoch, int):
+            return (epoch + 1) >= max_epochs
+    except Exception:
+        return False
+
+    return False
+
+
+def validate_ljspeech_metadata(voice_dir: Path) -> tuple[bool, str]:
+    metadata_path = voice_dir / "metadata.csv"
+    if not metadata_path.exists():
+        return False, f"metadata.csv ausente em {voice_dir}"
+
+    checked = 0
+    try:
+        with metadata_path.open("r", encoding="utf-8", errors="replace") as f:
+            for raw in f:
+                line = raw.strip()
+                if not line:
+                    continue
+
+                checked += 1
+                # Common Voice TSV vazou para metadata por voz.
+                if "\t" in line and "|" not in line:
+                    return False, "metadata parece TSV/Common Voice, não LJSpeech"
+
+                parts = line.split("|")
+                if len(parts) < 2:
+                    return False, "linha inválida no metadata (esperado formato LJSpeech: wav|texto)"
+
+                wav_rel = parts[0].strip()
+                if not wav_rel:
+                    return False, "linha inválida no metadata (arquivo wav vazio)"
+
+                if len(wav_rel) > 240:
+                    return False, "campo de arquivo wav muito longo (metadata corrompido)"
+
+                if "\t" in wav_rel:
+                    return False, "nome do wav contém TAB (metadata inválido)"
+
+                if checked >= 200:
+                    break
+    except OSError as exc:
+        return False, f"erro ao ler metadata: {exc}"
+
+    if checked == 0:
+        return False, "metadata.csv vazio"
+
+    return True, ""
+
+
+def preprocess_error_is_bad_data(log_tail: str) -> bool:
+    markers = [
+        "File name too long",
+        "Errno 36",
+        "metadata parece TSV",
+        "ljspeech_dataset",
+    ]
+    lowered = log_tail.lower()
+    return any(marker.lower() in lowered for marker in markers)
+
+
 def main() -> int:
     script_dir = Path(__file__).resolve().parent
+    argv = sys.argv[1:]
+
+    def cli_has_flag(flag: str) -> bool:
+        return any(arg == flag or arg.startswith(f"{flag}=") for arg in argv)
+
     parser = argparse.ArgumentParser(
         description="Treina vozes Piper em lote e exporta ONNX/ONNX JSON"
     )
@@ -374,9 +586,10 @@ def main() -> int:
         default=(
             "{python_exec} -m piper_train "
             "--dataset-dir {voice_work_dir} --accelerator gpu --devices 1 "
-            "--gpus 1 --batch-size {batch_size} --max_epochs {max_epochs} "
+            "--batch-size {batch_size} --max_epochs {max_epochs} "
             "--num_sanity_val_steps 0 --limit_val_batches 0 "
-            "--validation-split 0 --num-test-examples 0 --precision 16"
+            "--validation-split 0 --num-test-examples 0 --precision 32 "
+            "{resume_from_checkpoint_arg}"
         ),
         help="Template comando treino"
     )
@@ -399,11 +612,15 @@ def main() -> int:
 
     config = load_dataset_config(config_path)
     if config:
-        args.language = config.get("language", {}).get("code", args.language)
-        args.sample_rate = config.get("audio", {}).get("sample_rate", args.sample_rate)
+        if not cli_has_flag("--language"):
+            args.language = config.get("language", {}).get("code", args.language)
+        if not cli_has_flag("--sample-rate"):
+            args.sample_rate = config.get("audio", {}).get("sample_rate", args.sample_rate)
         train_cfg = config.get("training", {})
-        args.batch_size = train_cfg.get("batch_size", args.batch_size)
-        args.max_epochs = train_cfg.get("max_epochs", args.max_epochs)
+        if not cli_has_flag("--batch-size"):
+            args.batch_size = train_cfg.get("batch_size", args.batch_size)
+        if not cli_has_flag("--max-epochs"):
+            args.max_epochs = train_cfg.get("max_epochs", args.max_epochs)
 
     if args.preprocess_max_workers < 1:
         args.preprocess_max_workers = 1
@@ -434,7 +651,30 @@ def main() -> int:
     command_env["HIP_VISIBLE_DEVICES"] = "0"
     command_env["TORCH_FLOAT32_MATMUL_PRECISION"] = "medium"
 
-    if not args.dry_run and not has_module("piper_train", command_env):
+    piper_train_available = args.dry_run or has_module("piper_train", command_env)
+    using_local_fallback = False
+
+    # Só usa piper-src local automaticamente quando o módulo não existir no venv.
+    if piper_train_dir is None and not piper_train_available:
+        local_piper_src = script_dir / "piper-src"
+        if local_piper_src.exists():
+            piper_train_dir = local_piper_src
+            extra_pythonpaths = find_piper_train_paths(piper_train_dir)
+            command_env = with_env_pythonpath(os.environ, extra_pythonpaths)
+            command_env["PYTHONWARNINGS"] = (
+                f"{existing_warnings},{warning_filter}" if existing_warnings else warning_filter
+            )
+            command_env["AMD_SERIALIZE_KERNEL"] = "3"
+            command_env["TORCH_SHOW_CPP_STACKTRACES"] = "1"
+            command_env["HSA_OVERRIDE_GFX_VERSION"] = "11.0.0"
+            command_env["HIP_VISIBLE_DEVICES"] = "0"
+            command_env["TORCH_FLOAT32_MATMUL_PRECISION"] = "medium"
+            using_local_fallback = bool(extra_pythonpaths)
+            piper_train_available = args.dry_run or has_module("piper_train", command_env)
+            if piper_train_available or using_local_fallback:
+                print(f"Usando piper_train local em: {piper_train_dir}")
+
+    if not piper_train_available and not using_local_fallback:
         print("ERRO: módulo 'piper_train' não encontrado no ambiente atual.", file=sys.stderr)
         print(
             "Dica 1: instale o pacote de treino do Piper no venv ativo.",
@@ -456,6 +696,30 @@ def main() -> int:
             )
         return 3
 
+    if using_local_fallback and not piper_train_available:
+        print(
+            "AVISO: validação prévia do módulo piper_train falhou, mas o fallback local foi habilitado.",
+            file=sys.stderr,
+        )
+
+    resume_flag = ""
+    if piper_train_available and not args.dry_run:
+        resume_flag = detect_resume_flag(command_env)
+        if not resume_flag:
+            print(
+                "AVISO: piper_train não expõe flag de retomada de checkpoint; retomada automática ficará desabilitada.",
+                file=sys.stderr,
+            )
+
+    if piper_train_available and not args.dry_run:
+        vad_ok, vad_result = ensure_silero_vad_model(command_env)
+        if vad_ok:
+            print(f"silero_vad.onnx disponível em: {vad_result}")
+        else:
+            print("ERRO: não foi possível preparar silero_vad.onnx para preprocess com áudio.", file=sys.stderr)
+            print(f"Detalhe: {vad_result}", file=sys.stderr)
+            return 5
+
     if not args.dry_run:
         gpu_ok, gpu_info = detect_torch_gpu(command_env)
         if not gpu_ok and not args.allow_cpu_fallback:
@@ -470,22 +734,6 @@ def main() -> int:
             print("Kernels HIP serão serializados via AMD_SERIALIZE_KERNEL=3 para expor falhas assíncronas.")
         else:
             print("AVISO: seguindo em CPU por causa de --allow-cpu-fallback")
-
-    if piper_train_dir is None:
-        local_piper_src = script_dir / "piper-src"
-        if local_piper_src.exists():
-            piper_train_dir = local_piper_src
-            extra_pythonpaths = find_piper_train_paths(piper_train_dir)
-            command_env = with_env_pythonpath(os.environ, extra_pythonpaths)
-            command_env["PYTHONWARNINGS"] = (
-                f"{existing_warnings},{warning_filter}" if existing_warnings else warning_filter
-            )
-            command_env["AMD_SERIALIZE_KERNEL"] = "3"
-            command_env["TORCH_SHOW_CPP_STACKTRACES"] = "1"
-            command_env["HSA_OVERRIDE_GFX_VERSION"] = "11.0.0"
-            command_env["HIP_VISIBLE_DEVICES"] = "0"
-            command_env["TORCH_FLOAT32_MATMUL_PRECISION"] = "medium"
-            print(f"Usando piper_train local em: {piper_train_dir}")
 
     if extra_pythonpaths:
         probe_code = (
@@ -581,75 +829,142 @@ def main() -> int:
         stats["current_stage"] = "preprocess"
         stats["stage_elapsed"] = "00:00:00"
         stats["stage_spinner"] = ""
+        stats["last_log_file"] = str(logs_dir / f"{voice_name}_preprocess.log")
         print_dashboard(stats, ranking)
 
-        preprocess_cmd = render_cmd(args.preprocess_cmd, values)
         preprocess_log = logs_dir / f"{voice_name}_preprocess.log"
-        preprocess_code, preprocess_timed_out, preprocess_interrupted = run_cmd(
-            preprocess_cmd,
-            args.dry_run,
-            env=command_env,
-            stats=stats,
-            ranking=ranking,
-            log_file=preprocess_log,
-        )
-        if preprocess_interrupted:
-            stats["last_error"] = f"preprocess interrompido pelo usuário (código {preprocess_code})"
+        preprocess_ready = args.dry_run or has_preprocessed_dataset(voice_work_dir)
+        if preprocess_ready:
+            stats["current_stage"] = "preprocess (reutilizado)"
+            stats["stage_elapsed"] = "00:00:00"
+            stats["stage_spinner"] = ""
             print_dashboard(stats, ranking)
-            print(f"\nPROCESSO INTERROMPIDO durante preprocess de {voice_name} (código {preprocess_code})")
-            print(tail_text_file(preprocess_log))
-            return preprocess_code
+            print(f"AVISO: preprocess existente para {voice_name}; pulando preprocess.")
+        else:
+            metadata_ok, metadata_reason = validate_ljspeech_metadata(voice_path)
+            if not metadata_ok:
+                stats["voices_skipped_bad"] += 1
+                stats["last_error"] = f"dados inválidos em {voice_name}: {metadata_reason}"
+                stats["current_stage"] = "pulada (dados inválidos)"
+                stats["eligible_done"] += 1
+                print_dashboard(stats, ranking)
+                print(f"\nPULADA {voice_name}: {metadata_reason}")
+                continue
 
-        if preprocess_code != 0:
-            stats["fail_preprocess"] += 1
-            stats["last_error"] = (
-                f"preprocess falhou (código {preprocess_code})\n"
-                f"{tail_text_file(preprocess_log)}"
+            preprocess_cmd = render_cmd(args.preprocess_cmd, values)
+            preprocess_code, _, preprocess_interrupted, preprocess_action = run_cmd(
+                preprocess_cmd,
+                args.dry_run,
+                env=command_env,
+                stats=stats,
+                ranking=ranking,
+                log_file=preprocess_log,
             )
-            stats["eligible_done"] += 1
-            print_dashboard(stats, ranking)
-            print(f"\nFALHA EM preprocess para {voice_name} (código {preprocess_code})")
-            print(tail_text_file(preprocess_log))
-            continue
+            if preprocess_interrupted:
+                if preprocess_action == "next":
+                    stats["last_error"] = "preprocess pulado pelo usuário (tecla n)"
+                    stats["eligible_done"] += 1
+                    print_dashboard(stats, ranking)
+                    print(f"\nPULADA {voice_name}: preprocess interrompido via tecla n.")
+                    continue
+                stats["last_error"] = f"preprocess interrompido pelo usuário (código {preprocess_code})"
+                print_dashboard(stats, ranking)
+                print(f"\nPROCESSO INTERROMPIDO durante preprocess de {voice_name} (código {preprocess_code})")
+                print(tail_text_file(preprocess_log))
+                return preprocess_code
+
+            if preprocess_code != 0:
+                tail = tail_text_file(preprocess_log)
+                if preprocess_error_is_bad_data(tail):
+                    stats["voices_skipped_bad"] += 1
+                    stats["last_error"] = (
+                        f"preprocess inválido (dados) (código {preprocess_code})\n"
+                        f"{tail}"
+                    )
+                    stats["current_stage"] = "pulada (dados inválidos)"
+                else:
+                    stats["fail_preprocess"] += 1
+                    stats["last_error"] = (
+                        f"preprocess falhou (código {preprocess_code})\n"
+                        f"{tail}"
+                    )
+                stats["last_error"] = (
+                    stats["last_error"]
+                )
+                stats["eligible_done"] += 1
+                print_dashboard(stats, ranking)
+                print(f"\nFALHA EM preprocess para {voice_name} (código {preprocess_code})")
+                print(tail)
+                continue
 
         stats["current_stage"] = "treino"
         stats["stage_elapsed"] = "00:00:00"
         stats["stage_spinner"] = ""
+        stats["last_log_file"] = str(logs_dir / f"{voice_name}_train.log")
         print_dashboard(stats, ranking)
 
-        train_cmd = render_cmd(args.train_cmd, values)
         train_log = logs_dir / f"{voice_name}_train.log"
-        train_timeout = int(args.max_train_hours * 3600) if args.max_train_hours > 0 else None
-        train_code, train_timed_out, train_interrupted = run_cmd(
-            train_cmd,
-            args.dry_run,
-            env=command_env,
-            stats=stats,
-            ranking=ranking,
-            log_file=train_log,
-            timeout_seconds=train_timeout,
-            allow_ctrl_c_continue=True,
-        )
-        if train_code != 0 and not train_timed_out and not train_interrupted:
-            stats["fail_train"] += 1
-            stats["last_error"] = (
-                f"treino falhou (código {train_code})\n"
-                f"{tail_text_file(train_log)}"
-            )
-            stats["eligible_done"] += 1
-            print_dashboard(stats, ranking)
-            print(f"\nFALHA EM treino para {voice_name} (código {train_code})")
-            print(tail_text_file(train_log))
-            continue
+        checkpoint_before_train = None if args.dry_run else find_latest_checkpoint(voice_work_dir)
+        prev_timed_out = log_has_timeout_marker(train_log)
+        prev_reached_epochs = checkpoint_epoch_reached(checkpoint_before_train, args.max_epochs)
 
-        if train_timed_out:
-            print(f"AVISO: treino de {voice_name} atingiu limite de tempo; tentando exportar checkpoint mais recente.")
-        if train_interrupted:
-            print(f"AVISO: treino de {voice_name} interrompido por Ctrl+C; tentando exportar checkpoint mais recente.")
+        train_timed_out = False
+        train_interrupted = False
+        if checkpoint_before_train is not None and (prev_timed_out or prev_reached_epochs):
+            stats["current_stage"] = "treino (reutilizado)"
+            stats["stage_elapsed"] = "00:00:00"
+            stats["stage_spinner"] = ""
+            print_dashboard(stats, ranking)
+            reason = "tempo limite anterior" if prev_timed_out else "épocas já atingidas"
+            print(
+                f"AVISO: treino anterior de {voice_name} já atingiu {reason}; pulando treino e seguindo para export."
+            )
+        else:
+            values["resume_from_checkpoint_arg"] = (
+                f"{resume_flag} {shlex.quote(str(checkpoint_before_train))}"
+                if checkpoint_before_train is not None and resume_flag
+                else ""
+            )
+            train_cmd = render_cmd(args.train_cmd, values)
+            train_timeout = int(args.max_train_hours * 3600) if args.max_train_hours > 0 else None
+            train_code, train_timed_out, train_interrupted, train_action = run_cmd(
+                train_cmd,
+                args.dry_run,
+                env=command_env,
+                stats=stats,
+                ranking=ranking,
+                log_file=train_log,
+                timeout_seconds=train_timeout,
+                allow_ctrl_c_continue=True,
+            )
+            if train_interrupted and train_action == "quit":
+                stats["last_error"] = f"treino interrompido pelo usuário (código {train_code})"
+                print_dashboard(stats, ranking)
+                print(f"\nPROCESSO INTERROMPIDO durante treino de {voice_name} (código {train_code})")
+                print(tail_text_file(train_log))
+                return train_code
+
+            if train_code != 0 and not train_timed_out and not train_interrupted:
+                stats["fail_train"] += 1
+                stats["last_error"] = (
+                    f"treino falhou (código {train_code})\n"
+                    f"{tail_text_file(train_log)}"
+                )
+                stats["eligible_done"] += 1
+                print_dashboard(stats, ranking)
+                print(f"\nFALHA EM treino para {voice_name} (código {train_code})")
+                print(tail_text_file(train_log))
+                continue
+
+            if train_timed_out:
+                print(f"AVISO: treino de {voice_name} atingiu limite de tempo; tentando exportar checkpoint mais recente.")
+            if train_interrupted:
+                print(f"AVISO: treino de {voice_name} interrompido por Ctrl+C; tentando exportar checkpoint mais recente.")
 
         stats["current_stage"] = "export"
         stats["stage_elapsed"] = "00:00:00"
         stats["stage_spinner"] = ""
+        stats["last_log_file"] = str(logs_dir / f"{voice_name}_export.log")
         print_dashboard(stats, ranking)
 
         if args.dry_run:
@@ -670,7 +985,7 @@ def main() -> int:
 
         export_cmd = render_cmd(args.export_cmd, values)
         export_log = logs_dir / f"{voice_name}_export.log"
-        export_code, _, _ = run_cmd(
+        export_code, _, export_interrupted, export_action = run_cmd(
             export_cmd,
             args.dry_run,
             env=command_env,
@@ -678,6 +993,20 @@ def main() -> int:
             ranking=ranking,
             log_file=export_log,
         )
+        if export_interrupted:
+            if export_action == "next":
+                stats["last_error"] = "export pulado pelo usuário (tecla n)"
+                stats["eligible_done"] += 1
+                print_dashboard(stats, ranking)
+                print(f"\nPULADA {voice_name}: export interrompido via tecla n.")
+                continue
+
+            stats["last_error"] = f"export interrompido pelo usuário (código {export_code})"
+            print_dashboard(stats, ranking)
+            print(f"\nPROCESSO INTERROMPIDO durante export de {voice_name} (código {export_code})")
+            print(tail_text_file(export_log))
+            return export_code
+
         if export_code != 0:
             stats["fail_export"] += 1
             stats["last_error"] = (
