@@ -7,52 +7,124 @@ set -euo pipefail
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 VENV_DIR="$PROJECT_DIR/.venv"
 PYTHON_BIN="python3.12"
+REQUIRED_PYTHON_VERSION="3.12.13"
 
-if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
-  echo "ERRO: python3.12 nao encontrado no sistema."
-  exit 1
-fi
+# Versoes fixadas (baseline atual)
+PIP_VERSION="26.0.1"
+SETUPTOOLS_VERSION="70.2.0"
+WHEEL_VERSION="0.46.3"
 
-echo "[1/11] Criando venv em $VENV_DIR"
+TORCH_INDEX_URL="https://download.pytorch.org/whl/rocm6.1"
+TORCH_VERSION="2.6.0+rocm6.1"
+TORCHVISION_VERSION="0.21.0+rocm6.1"
+TORCHAUDIO_VERSION="2.6.0+rocm6.1"
+
+PYTORCH_LIGHTNING_VERSION="1.9.5"
+ONNXRUNTIME_VERSION="1.24.4"
+LIBROSA_VERSION="0.11.0"
+NUMPY_VERSION="2.4.3"
+SCIPY_VERSION="1.17.1"
+SCIKIT_LEARN_VERSION="1.8.0"
+NUMBA_VERSION="0.65.0"
+CYTHON_VERSION="0.29.37"
+SOUNDFILE_VERSION="0.13.1"
+SILERO_VAD_VERSION="6.2.1"
+
+PIPER_PHONEMIZE_COMMIT="ba3cc06c5248215928821f1393b2b854a936991a"
+PIPER_REPO_URL="https://github.com/rhasspy/piper.git"
+PIPER_COMMIT="73c04d81d5590ecc46e522de3601ce7fb29fc2be"
+
+check_system_prerequisites() {
+  echo "[1/12] Verificando pre-requisitos de sistema"
+
+  local required_bins=("$PYTHON_BIN" git gcc g++ make)
+  local missing=0
+
+  for bin in "${required_bins[@]}"; do
+    if ! command -v "$bin" >/dev/null 2>&1; then
+      echo "ERRO: comando obrigatorio nao encontrado: $bin"
+      missing=1
+    fi
+  done
+
+  local python_version
+  python_version="$($PYTHON_BIN -c 'import sys; print(".".join(map(str, sys.version_info[:3])))')"
+  if [ "$python_version" != "$REQUIRED_PYTHON_VERSION" ]; then
+    echo "ERRO: versao de Python incompativel. Esperado: $REQUIRED_PYTHON_VERSION, encontrado: $python_version"
+    exit 1
+  fi
+
+  if [ "$missing" -ne 0 ]; then
+    echo "Instale os pre-requisitos de sistema e rode novamente."
+    exit 1
+  fi
+
+  "$PYTHON_BIN" - <<'PYCODE'
+import ctypes.util
+import sys
+
+missing = []
+for lib in ("espeak-ng", "onnxruntime"):
+    if not ctypes.util.find_library(lib):
+        missing.append(lib)
+
+if missing:
+    print("ERRO: bibliotecas de sistema ausentes: " + ", ".join(missing))
+    print("Instale as libs no host e rode novamente.")
+    sys.exit(1)
+PYCODE
+
+  echo "Pre-requisitos de sistema OK"
+}
+
+check_system_prerequisites
+
+echo "[2/12] Criando venv em $VENV_DIR"
 rm -rf "$VENV_DIR"
 "$PYTHON_BIN" -m venv "$VENV_DIR"
 
 PIP="$VENV_DIR/bin/pip"
 PY="$VENV_DIR/bin/python"
 
-echo "[2/11] Atualizando ferramentas base"
-"$PIP" install --upgrade pip setuptools wheel
+echo "[3/12] Atualizando ferramentas base"
+"$PIP" install --upgrade \
+  "pip==$PIP_VERSION" \
+  "setuptools==$SETUPTOOLS_VERSION" \
+  "wheel==$WHEEL_VERSION"
 
-echo "[3/11] Instalando stack PyTorch ROCm"
-"$PIP" install --index-url https://download.pytorch.org/whl/rocm6.1 \
-  torch==2.6.0+rocm6.1 torchvision==0.21.0+rocm6.1 torchaudio==2.6.0+rocm6.1
+echo "[4/12] Instalando stack PyTorch ROCm"
+"$PIP" install --index-url "$TORCH_INDEX_URL" \
+  "torch==$TORCH_VERSION" \
+  "torchvision==$TORCHVISION_VERSION" \
+  "torchaudio==$TORCHAUDIO_VERSION"
 
-echo "[4/11] Instalando dependencias gerais"
+echo "[5/12] Instalando dependencias gerais"
 "$PIP" install \
-  pytorch-lightning==1.9.5 \
-  onnxruntime==1.24.4 \
-  librosa==0.11.0 \
-  numpy==2.4.3 \
-  scipy==1.17.1 \
-  scikit-learn==1.8.0 \
-  numba==0.65.0 \
-  Cython==0.29.37 \
-  soundfile==0.13.1 \
-  silero-vad==6.2.1
+  "pytorch-lightning==$PYTORCH_LIGHTNING_VERSION" \
+  "onnxruntime==$ONNXRUNTIME_VERSION" \
+  "librosa==$LIBROSA_VERSION" \
+  "numpy==$NUMPY_VERSION" \
+  "scipy==$SCIPY_VERSION" \
+  "scikit-learn==$SCIKIT_LEARN_VERSION" \
+  "numba==$NUMBA_VERSION" \
+  "Cython==$CYTHON_VERSION" \
+  "soundfile==$SOUNDFILE_VERSION" \
+  "silero-vad==$SILERO_VAD_VERSION"
 
-echo "[5/11] Instalando piper_phonemize (fixado)"
-"$PIP" install "piper_phonemize @ git+https://github.com/rhasspy/piper-phonemize.git@ba3cc06c5248215928821f1393b2b854a936991a"
+echo "[6/12] Instalando piper_phonemize (fixado)"
+"$PIP" install "piper_phonemize @ git+https://github.com/rhasspy/piper-phonemize.git@$PIPER_PHONEMIZE_COMMIT"
 
-echo "[6/11] Baixando piper temporariamente para instalar piper_train"
+echo "[7/12] Baixando piper temporariamente para instalar piper_train"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-git clone https://github.com/rhasspy/piper.git "$TMP_DIR/piper"
+git clone "$PIPER_REPO_URL" "$TMP_DIR/piper"
+( cd "$TMP_DIR/piper" && git checkout "$PIPER_COMMIT" )
 
 # Instala piper_train no venv sem deps (deps ja foram controladas acima)
 "$PIP" install --no-deps "$TMP_DIR/piper/src/python"
 
-echo "[7/11] Compilando monotonic_align"
+echo "[8/12] Compilando monotonic_align"
 (
   cd "$TMP_DIR/piper/src/python"
   "$PY" piper_train/vits/monotonic_align/setup.py build_ext --inplace
@@ -70,7 +142,7 @@ MONO_DIR="$PIPER_TRAIN_DIR/vits/monotonic_align"
 mkdir -p "$MONO_DIR"
 cp -f "$SO_FILE" "$MONO_DIR/"
 
-echo "[8/11] Aplicando patch de compatibilidade no piper_train"
+echo "[9/12] Aplicando patch de compatibilidade no piper_train"
 "$PY" - <<PYCODE
 from pathlib import Path
 
@@ -147,7 +219,7 @@ if "from .monotonic_align.core import maximum_path_c" in mono_src:
 mono_init.write_text(mono_src, encoding="utf-8")
 PYCODE
 
-echo "[9/11] Copiando silero_vad.onnx para o caminho esperado do piper_train"
+echo "[10/12] Copiando silero_vad.onnx para o caminho esperado do piper_train"
 "$PY" - <<PYCODE
 from pathlib import Path
 from importlib import resources
@@ -161,10 +233,10 @@ shutil.copyfile(src, dst)
 print(dst)
 PYCODE
 
-echo "[10/11] Validacoes rapidas"
+echo "[11/12] Validacoes rapidas"
 "$PY" -c "import torch, pytorch_lightning as pl, piper_train; print('torch', torch.__version__, 'gpu', torch.cuda.is_available()); print('pl', pl.__version__); print('piper_train', piper_train.__file__)"
 "$PY" -c "import piper_train.vits.monotonic_align as m; print('monotonic_align ok', m.__file__)"
 "$PY" -c "from pathlib import Path; import piper_train; p=Path(piper_train.__file__).resolve().parent/'norm_audio'/'models'/'silero_vad.onnx'; print('silero_vad exists', p.exists(), p)"
 
-echo "[11/11] Ambiente recriado com sucesso"
+echo "[12/12] Ambiente recriado com sucesso"
 echo "Use: $PY treinar_vozes_piper.py --max-epochs-cap 2000 --max-train-hours 2 --batch-size 16 --preprocess-max-workers 16"
