@@ -149,6 +149,7 @@ from pathlib import Path
 site_pkgs = Path(r"$SITE_PKGS")
 main_py = site_pkgs / "piper_train" / "__main__.py"
 mono_init = site_pkgs / "piper_train" / "vits" / "monotonic_align" / "__init__.py"
+vad_py = site_pkgs / "piper_train" / "norm_audio" / "vad.py"
 
 src = main_py.read_text(encoding="utf-8")
 
@@ -217,6 +218,56 @@ if "from .monotonic_align.core import maximum_path_c" in mono_src:
         "    from .core import maximum_path_c\n"
     )
 mono_init.write_text(mono_src, encoding="utf-8")
+
+  vad_src = vad_py.read_text(encoding="utf-8")
+  if '"h0": self._h' in vad_src and '"state": self._state' not in vad_src:
+    vad_src = vad_src.replace(
+      "        self._h = np.zeros((2, 1, 64)).astype(\"float32\")\n"
+      "        self._c = np.zeros((2, 1, 64)).astype(\"float32\")\n",
+      "        input_names = {inp.name for inp in self.session.get_inputs()}\n"
+      "        self._uses_state_input = (\"state\" in input_names) and (\"sr\" in input_names)\n"
+      "\n"
+      "        if self._uses_state_input:\n"
+      "            # Newer Silero ONNX expects recurrent state + sample rate.\n"
+      "            self._state = np.zeros((2, 1, 128), dtype=np.float32)\n"
+      "        else:\n"
+      "            # Legacy Silero ONNX expects h0/c0 inputs.\n"
+      "            self._h = np.zeros((2, 1, 64), dtype=np.float32)\n"
+      "            self._c = np.zeros((2, 1, 64), dtype=np.float32)\n"
+    )
+
+    vad_src = vad_src.replace(
+      "        ort_inputs = {\n"
+      "            \"input\": audio_array.astype(np.float32),\n"
+      "            \"h0\": self._h,\n"
+      "            \"c0\": self._c,\n"
+      "        }\n"
+      "        ort_outs = self.session.run(None, ort_inputs)\n"
+      "        out, self._h, self._c = ort_outs\n"
+      "\n"
+      "        out = out.squeeze(2)[:, 1]  # make output type match JIT analog\n"
+      "\n"
+      "        return out\n",
+      "        if self._uses_state_input:\n"
+      "            ort_inputs = {\n"
+      "                \"input\": audio_array.astype(np.float32),\n"
+      "                \"state\": self._state,\n"
+      "                \"sr\": np.array(sample_rate, dtype=np.int64),\n"
+      "            }\n"
+      "            out, self._state = self.session.run(None, ort_inputs)\n"
+      "            return float(np.asarray(out).squeeze())\n"
+      "\n"
+      "        ort_inputs = {\n"
+      "            \"input\": audio_array.astype(np.float32),\n"
+      "            \"h0\": self._h,\n"
+      "            \"c0\": self._c,\n"
+      "        }\n"
+      "        out, self._h, self._c = self.session.run(None, ort_inputs)\n"
+      "        out = out.squeeze(2)[:, 1]  # make output type match JIT analog\n"
+      "        return float(np.asarray(out).squeeze())\n"
+    )
+
+  vad_py.write_text(vad_src, encoding="utf-8")
 PYCODE
 
 echo "[10/12] Copiando silero_vad.onnx para o caminho esperado do piper_train"

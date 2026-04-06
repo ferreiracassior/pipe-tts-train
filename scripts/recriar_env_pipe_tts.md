@@ -91,7 +91,7 @@ O script faz:
 5. Instala piper_phonemize por commit.
 6. Clona piper em pasta temporaria (tmp), instala piper_train e remove o clone ao final.
 7. Compila monotonic_align e copia o .so para site-packages.
-8. Aplica patch de compatibilidade no piper_train instalado.
+8. Aplica patch de compatibilidade no piper_train instalado (Lightning + monotonic_align + VAD state/sr vs h0/c0).
 9. Copia silero_vad.onnx do pacote silero-vad para o caminho esperado pelo piper_train.
 10. Executa validacoes finais (torch, lightning, piper_train, monotonic_align, silero_vad.onnx).
 
