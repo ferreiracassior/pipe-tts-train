@@ -1,0 +1,321 @@
+
+[2026-04-05T21:38:09.597534] CMD: /home/StorageHDD/setups-linux/pipe-tts-train/.venv/bin/python -m piper_train --dataset-dir /home/StorageHDD/setups-linux/pipe-tts-train/piper_training_work/voice_e4c54f9b --accelerator gpu --devices 1 --gpus 1 --batch-size 32 --max_epochs 100 --num_sanity_val_steps 0 --limit_val_batches 0 --validation-split 0 --num-test-examples 0
+DEBUG:piper_train:Namespace(dataset_dir='/home/StorageHDD/setups-linux/pipe-tts-train/piper_training_work/voice_e4c54f9b', checkpoint_epochs=None, quality='medium', resume_from_single_speaker_checkpoint=None, logger=True, enable_checkpointing=True, default_root_dir=None, gradient_clip_val=None, gradient_clip_algorithm=None, num_nodes=1, num_processes=None, devices='1', gpus=1, auto_select_gpus=None, tpu_cores=None, ipus=None, enable_progress_bar=True, overfit_batches=0.0, track_grad_norm=-1, check_val_every_n_epoch=1, fast_dev_run=False, accumulate_grad_batches=None, max_epochs=100, min_epochs=None, max_steps=-1, min_steps=None, max_time=None, limit_train_batches=None, limit_val_batches=0, limit_test_batches=None, limit_predict_batches=None, val_check_interval=None, log_every_n_steps=50, accelerator='gpu', strategy=None, sync_batchnorm=False, precision=32, enable_model_summary=True, num_sanity_val_steps=0, resume_from_checkpoint=None, profiler=None, benchmark=None, reload_dataloaders_every_n_epochs=0, auto_lr_find=False, replace_sampler_ddp=True, detect_anomaly=False, auto_scale_batch_size=False, plugins=None, amp_backend=None, amp_level=None, move_metrics_to_cpu=False, multiple_trainloader_mode='max_size_cycle', inference_mode=True, batch_size=32, validation_split=0, num_test_examples=0, max_phoneme_ids=None, hidden_channels=192, inter_channels=192, filter_channels=768, n_layers=6, n_heads=2, seed=1234)
+/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/trainer/connectors/accelerator_connector.py:478: LightningDeprecationWarning: Setting `Trainer(gpus=1)` is deprecated in v1.7 and will be removed in v2.0. Please use `Trainer(accelerator='gpu', devices=1)` instead.
+  rank_zero_deprecation(
+/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/trainer/connectors/accelerator_connector.py:498: UserWarning: The flag `devices=1` will be ignored, instead the device specific number 1 will be used
+  rank_zero_warn(
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/trainer/connectors/logger_connector/logger_connector.py:67: UserWarning: Starting from v1.9.0, `tensorboardX` has been removed as a dependency of the `pytorch_lightning` package, due to potential conflicts with other packages in the ML ecosystem. For this reason, `logger=True` will use `CSVLogger` as the default logger, unless the `tensorboard` or `tensorboardX` packages are found. Please `pip install lightning[extra]` or one of them to enable TensorBoard support by default
+  warning_cache.warn(
+DEBUG:vits.dataset:Loading dataset: /home/StorageHDD/setups-linux/pipe-tts-train/piper_training_work/voice_e4c54f9b/dataset.jsonl
+You are using a CUDA device ('AMD Radeon RX 7800 XT') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+  | Name    | Type                     | Params
+-----------------------------------------------------
+0 | model_g | SynthesizerTrn           | 23.7 M
+1 | model_d | MultiPeriodDiscriminator | 46.7 M
+-----------------------------------------------------
+70.4 M    Trainable params
+0         Non-trainable params
+70.4 M    Total params
+281.644   Total estimated model params size (MB)
+DEBUG:fsspec.local:open file: /home/StorageHDD/setups-linux/pipe-tts-train/piper_training_work/voice_e4c54f9b/lightning_logs/version_16/hparams.yaml
+/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/trainer/connectors/data_connector.py:224: PossibleUserWarning: The dataloader, train_dataloader, does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` (try 16 which is the number of cpus on this machine) in the `DataLoader` init to improve performance.
+  rank_zero_warn(
+Training: 0it [00:00, ?it/s]Training:   0%|          | 0/291 [00:00<?, ?it/s]Epoch 0:   0%|          | 0/291 [00:00<?, ?it/s] [W405 21:38:14.488900280 Module.cpp:175] symbolizing C++ stack trace for exception; if this hangs, rerun with TORCH_DISABLE_ADDR2LINE=1...
+
+DEBUG:fsspec.local:open file: /home/StorageHDD/setups-linux/pipe-tts-train/piper_training_work/voice_e4c54f9b/lightning_logs/version_16/hparams.yaml
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/piper-src/src/python/piper_train/__main__.py", line 157, in <module>
+    main()
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/piper-src/src/python/piper_train/__main__.py", line 134, in main
+    trainer.fit(model)
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/trainer/trainer.py", line 608, in fit
+    call._call_and_handle_interrupt(
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/trainer/call.py", line 38, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/trainer/trainer.py", line 650, in _fit_impl
+    self._run(model, ckpt_path=self.ckpt_path)
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/trainer/trainer.py", line 1112, in _run
+    results = self._run_stage()
+              ^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/trainer/trainer.py", line 1191, in _run_stage
+    self._run_train()
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/trainer/trainer.py", line 1214, in _run_train
+    self.fit_loop.run()
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/loops/fit_loop.py", line 267, in advance
+    self._outputs = self.epoch_loop.run(self._data_fetcher)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/loops/epoch/training_epoch_loop.py", line 213, in advance
+    batch_output = self.batch_loop.run(kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/loops/batch/training_batch_loop.py", line 88, in advance
+    outputs = self.optimizer_loop.run(optimizers, kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/loops/loop.py", line 199, in run
+    self.advance(*args, **kwargs)
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 202, in advance
+    result = self._run_optimization(kwargs, self._optimizers[self.optim_progress.optimizer_position])
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 249, in _run_optimization
+    self._optimizer_step(optimizer, opt_idx, kwargs.get("batch_idx", 0), closure)
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 370, in _optimizer_step
+    self.trainer._call_lightning_module_hook(
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/trainer/trainer.py", line 1356, in _call_lightning_module_hook
+    output = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/core/module.py", line 1742, in optimizer_step
+    optimizer.step(closure=optimizer_closure)
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/core/optimizer.py", line 169, in step
+    step_output = self._strategy.optimizer_step(self._optimizer, self._optimizer_idx, closure, **kwargs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/strategies/strategy.py", line 234, in optimizer_step
+    return self.precision_plugin.optimizer_step(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/plugins/precision/precision_plugin.py", line 119, in optimizer_step
+    return optimizer.step(closure=closure, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/torch/optim/lr_scheduler.py", line 130, in wrapper
+    return func.__get__(opt, opt.__class__)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/torch/optim/optimizer.py", line 484, in wrapper
+    out = func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/torch/optim/optimizer.py", line 89, in _use_grad
+    ret = func(self, *args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/torch/optim/adamw.py", line 204, in step
+    loss = closure()
+           ^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/plugins/precision/precision_plugin.py", line 105, in _wrap_closure
+    closure_result = closure()
+                     ^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 149, in __call__
+    self._result = self.closure(*args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 135, in closure
+    step_output = self._step_fn()
+                  ^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/loops/optimization/optimizer_loop.py", line 419, in _training_step
+    training_step_output = self.trainer._call_strategy_hook("training_step", *kwargs.values())
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/trainer/trainer.py", line 1494, in _call_strategy_hook
+    output = fn(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/strategies/strategy.py", line 378, in training_step
+    return self.model.training_step(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/piper-src/src/python/piper_train/vits/lightning.py", line 201, in training_step
+    return self.training_step_g(batch)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/piper-src/src/python/piper_train/vits/lightning.py", line 224, in training_step_g
+    ) = self.model_g(x, x_lengths, spec, spec_lengths, speaker_ids)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/piper-src/src/python/piper_train/vits/models.py", line 619, in forward
+    x, m_p, logs_p, x_mask = self.enc_p(x, x_lengths)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/piper-src/src/python/piper_train/vits/models.py", line 199, in forward
+    x = self.emb(x) * math.sqrt(self.hidden_channels)  # [b, t, h]
+        ^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/torch/nn/modules/sparse.py", line 164, in forward
+    return F.embedding(
+           ^^^^^^^^^^^^
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/torch/nn/functional.py", line 2267, in embedding
+    return torch.embedding(weight, input, padding_idx, scale_grad_by_freq, sparse)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: HIP error: invalid device function
+Compile with `TORCH_USE_HIP_DSA` to enable device-side assertions.
+
+Exception raised from c10_hip_check_implementation at ../c10/hip/HIPException.cpp:44 (most recent call first):
+C++ CapturedTraceback:
+#4 std::_Function_handler<std::shared_ptr<c10::LazyValue<std::string> const> (), c10::SetStackTraceFetcher(std::function<std::string ()>)::{lambda()#1}>::_M_invoke(std::_Any_data const&) from Logging.cpp:0
+#5 c10::Error::Error(c10::SourceLocation, std::string) from ??:0
+#6 c10::detail::torchCheckFail(char const*, char const*, unsigned int, std::string const&) from ??:0
+#7 c10::hip::c10_hip_check_implementation(int, char const*, char const*, int, bool) from ??:0
+#8 at::native::index_select_out_cuda(at::Tensor const&, long, at::Tensor const&, at::Tensor&)::{lambda()#2}::operator()() const from Indexing.hip:0
+#9 at::native::index_select_out_cuda(at::Tensor const&, long, at::Tensor const&, at::Tensor&) from ??:0
+#10 at::native::index_select_cuda(at::Tensor const&, long, at::Tensor const&) from ??:0
+#11 at::(anonymous namespace)::(anonymous namespace)::wrapper_CUDA__index_select(at::Tensor const&, long, at::Tensor const&) from RegisterCUDA.cpp:0
+#12 c10::impl::wrap_kernel_functor_unboxed_<c10::impl::detail::WrapFunctionIntoFunctor_<c10::CompileTimeFunctionPointer<at::Tensor (at::Tensor const&, long, at::Tensor const&), &at::(anonymous namespace)::(anonymous namespace)::wrapper_CUDA__index_select>, at::Tensor, c10::guts::typelist::typelist<at::Tensor const&, long, at::Tensor const&> >, at::Tensor (at::Tensor const&, long, at::Tensor const&)>::call(c10::OperatorKernel*, c10::DispatchKeySet, at::Tensor const&, long, at::Tensor const&) from RegisterCUDA.cpp:0
+#13 at::_ops::index_select::call(at::Tensor const&, long, at::Tensor const&) from ??:0
+#14 at::native::embedding_symint(at::Tensor const&, at::Tensor const&, c10::SymInt, bool, bool) from ??:0
+#15 at::(anonymous namespace)::(anonymous namespace)::wrapper_CompositeExplicitAutograd__embedding(at::Tensor const&, at::Tensor const&, c10::SymInt, bool, bool) from RegisterCompositeExplicitAutograd.cpp:0
+#16 c10::impl::wrap_kernel_functor_unboxed_<c10::impl::detail::WrapFunctionIntoFunctor_<c10::CompileTimeFunctionPointer<at::Tensor (at::Tensor const&, at::Tensor const&, c10::SymInt, bool, bool), &at::(anonymous namespace)::(anonymous namespace)::wrapper_CompositeExplicitAutograd__embedding>, at::Tensor, c10::guts::typelist::typelist<at::Tensor const&, at::Tensor const&, c10::SymInt, bool, bool> >, at::Tensor (at::Tensor const&, at::Tensor const&, c10::SymInt, bool, bool)>::call(c10::OperatorKernel*, c10::DispatchKeySet, at::Tensor const&, at::Tensor const&, c10::SymInt, bool, bool) from RegisterCompositeExplicitAutograd.cpp:0
+#17 at::_ops::embedding::redispatch(c10::DispatchKeySet, at::Tensor const&, at::Tensor const&, c10::SymInt, bool, bool) from ??:0
+#18 torch::autograd::VariableType::(anonymous namespace)::embedding(c10::DispatchKeySet, at::Tensor const&, at::Tensor const&, c10::SymInt, bool, bool) from VariableType_4.cpp:0
+#19 c10::impl::wrap_kernel_functor_unboxed_<c10::impl::detail::WrapFunctionIntoFunctor_<c10::CompileTimeFunctionPointer<at::Tensor (c10::DispatchKeySet, at::Tensor const&, at::Tensor const&, c10::SymInt, bool, bool), &torch::autograd::VariableType::(anonymous namespace)::embedding>, at::Tensor, c10::guts::typelist::typelist<c10::DispatchKeySet, at::Tensor const&, at::Tensor const&, c10::SymInt, bool, bool> >, at::Tensor (c10::DispatchKeySet, at::Tensor const&, at::Tensor const&, c10::SymInt, bool, bool)>::call(c10::OperatorKernel*, c10::DispatchKeySet, at::Tensor const&, at::Tensor const&, c10::SymInt, bool, bool) from VariableType_4.cpp:0
+#20 at::_ops::embedding::call(at::Tensor const&, at::Tensor const&, c10::SymInt, bool, bool) from ??:0
+#21 torch::autograd::THPVariable_embedding(_object*, _object*, _object*) from python_torch_functions_0.cpp:0
+#22 PyModule_GetState from ??:0
+#23 _PyObject_MakeTpCall from ??:0
+#24 _PyEval_EvalFrameDefault from ??:0
+#25 PyCapsule_New from ??:0
+#26 _PyEval_EvalFrameDefault from ??:0
+#27 PyCapsule_New from ??:0
+#28 _PyEval_EvalFrameDefault from ??:0
+#29 _PyObject_FastCallDictTstate from ??:0
+#30 PyType_Ready from ??:0
+#31 _PyObject_MakeTpCall from ??:0
+#32 _PyEval_EvalFrameDefault from ??:0
+#33 PyCapsule_New from ??:0
+#34 _PyEval_EvalFrameDefault from ??:0
+#35 PyCapsule_New from ??:0
+#36 _PyEval_EvalFrameDefault from ??:0
+#37 _PyObject_FastCallDictTstate from ??:0
+#38 PyType_Ready from ??:0
+#39 _PyObject_MakeTpCall from ??:0
+#40 _PyEval_EvalFrameDefault from ??:0
+#41 PyCapsule_New from ??:0
+#42 _PyEval_EvalFrameDefault from ??:0
+#43 PyCapsule_New from ??:0
+#44 _PyEval_EvalFrameDefault from ??:0
+#45 _PyObject_FastCallDictTstate from ??:0
+#46 PyType_Ready from ??:0
+#47 _PyObject_MakeTpCall from ??:0
+#48 _PyEval_EvalFrameDefault from ??:0
+#49 PyCapsule_New from ??:0
+#50 _PyEval_EvalFrameDefault from ??:0
+#51 PyCapsule_New from ??:0
+#52 _PyEval_EvalFrameDefault from ??:0
+#53 PyCapsule_New from ??:0
+#54 _PyEval_EvalFrameDefault from ??:0
+#55 PyCapsule_New from ??:0
+#56 PyInit__abc from ??:0
+#57 _PyEval_EvalFrameDefault from ??:0
+#58 PyCapsule_New from ??:0
+#59 _PyEval_EvalFrameDefault from ??:0
+#60 _PyObject_FastCallDictTstate from ??:0
+#61 PyType_Ready from ??:0
+#62 _PyObject_MakeTpCall from ??:0
+#63 _PyEval_EvalFrameDefault from ??:0
+#64 PyCapsule_New from ??:0
+#65 PyInit__abc from ??:0
+#66 _PyEval_EvalFrameDefault from ??:0
+#67 PyCapsule_New from ??:0
+#68 PyObject_VectorcallDict from ??:0
+#69 _PyEval_EvalFrameDefault from ??:0
+#70 PyCapsule_New from ??:0
+#71 PyObject_VectorcallDict from ??:0
+#72 _PyEval_EvalFrameDefault from ??:0
+#73 PyCapsule_New from ??:0
+#74 _PyEval_EvalFrameDefault from ??:0
+#75 PyCapsule_New from ??:0
+#76 PyObject_VectorcallDict from ??:0
+#77 _PyEval_EvalFrameDefault from ??:0
+#78 PyCapsule_New from ??:0
+#79 PyObject_VectorcallDict from ??:0
+#80 _PyEval_EvalFrameDefault from ??:0
+#81 PyCapsule_New from ??:0
+#82 _PyEval_EvalFrameDefault from ??:0
+#83 PyCapsule_New from ??:0
+#84 _PyEval_EvalFrameDefault from ??:0
+#85 PyCapsule_New from ??:0
+#86 _PyEval_EvalFrameDefault from ??:0
+#87 PyCapsule_New from ??:0
+#88 _PyEval_EvalFrameDefault from ??:0
+#89 PyCapsule_New from ??:0
+#90 _PyEval_EvalFrameDefault from ??:0
+#91 PyEval_EvalCode from ??:0
+#92 PyInit__tokenize from ??:0
+#93 PyCFunction_GetFlags from ??:0
+#94 _PyEval_EvalFrameDefault from ??:0
+#95 _Py_UTF8_Edit_Cost from ??:0
+#96 Py_RunMain from ??:0
+#97 Py_BytesMain from ??:0
+#98 __libc_init_first from ??:0
+#99 __libc_start_main from ??:0
+#100 _start from ??:0
+
+Epoch 0:   0%|          | 0/291 [00:01<?, ?it/s]
+[2026-04-05T21:40:03.377033] CMD: /home/StorageHDD/setups-linux/pipe-tts-train/.venv/bin/python -m piper_train --dataset-dir /home/StorageHDD/setups-linux/pipe-tts-train/piper_training_work/voice_e4c54f9b --accelerator gpu --devices 1 --gpus 1 --batch-size 32 --max_epochs 100 --num_sanity_val_steps 0 --limit_val_batches 0 --validation-split 0 --num-test-examples 0
+DEBUG:piper_train:Namespace(dataset_dir='/home/StorageHDD/setups-linux/pipe-tts-train/piper_training_work/voice_e4c54f9b', checkpoint_epochs=None, quality='medium', resume_from_single_speaker_checkpoint=None, logger=True, enable_checkpointing=True, default_root_dir=None, gradient_clip_val=None, gradient_clip_algorithm=None, num_nodes=1, num_processes=None, devices='1', gpus=1, auto_select_gpus=None, tpu_cores=None, ipus=None, enable_progress_bar=True, overfit_batches=0.0, track_grad_norm=-1, check_val_every_n_epoch=1, fast_dev_run=False, accumulate_grad_batches=None, max_epochs=100, min_epochs=None, max_steps=-1, min_steps=None, max_time=None, limit_train_batches=None, limit_val_batches=0, limit_test_batches=None, limit_predict_batches=None, val_check_interval=None, log_every_n_steps=50, accelerator='gpu', strategy=None, sync_batchnorm=False, precision=32, enable_model_summary=True, num_sanity_val_steps=0, resume_from_checkpoint=None, profiler=None, benchmark=None, reload_dataloaders_every_n_epochs=0, auto_lr_find=False, replace_sampler_ddp=True, detect_anomaly=False, auto_scale_batch_size=False, plugins=None, amp_backend=None, amp_level=None, move_metrics_to_cpu=False, multiple_trainloader_mode='max_size_cycle', inference_mode=True, batch_size=32, validation_split=0, num_test_examples=0, max_phoneme_ids=None, hidden_channels=192, inter_channels=192, filter_channels=768, n_layers=6, n_heads=2, seed=1234)
+/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/trainer/connectors/accelerator_connector.py:478: LightningDeprecationWarning: Setting `Trainer(gpus=1)` is deprecated in v1.7 and will be removed in v2.0. Please use `Trainer(accelerator='gpu', devices=1)` instead.
+  rank_zero_deprecation(
+/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/trainer/connectors/accelerator_connector.py:498: UserWarning: The flag `devices=1` will be ignored, instead the device specific number 1 will be used
+  rank_zero_warn(
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/trainer/connectors/logger_connector/logger_connector.py:67: UserWarning: Starting from v1.9.0, `tensorboardX` has been removed as a dependency of the `pytorch_lightning` package, due to potential conflicts with other packages in the ML ecosystem. For this reason, `logger=True` will use `CSVLogger` as the default logger, unless the `tensorboard` or `tensorboardX` packages are found. Please `pip install lightning[extra]` or one of them to enable TensorBoard support by default
+  warning_cache.warn(
+DEBUG:vits.dataset:Loading dataset: /home/StorageHDD/setups-linux/pipe-tts-train/piper_training_work/voice_e4c54f9b/dataset.jsonl
+You are using a CUDA device ('AMD Radeon RX 7800 XT') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+  | Name    | Type                     | Params
+-----------------------------------------------------
+0 | model_g | SynthesizerTrn           | 23.7 M
+1 | model_d | MultiPeriodDiscriminator | 46.7 M
+-----------------------------------------------------
+70.4 M    Trainable params
+0         Non-trainable params
+70.4 M    Total params
+281.644   Total estimated model params size (MB)
+DEBUG:fsspec.local:open file: /home/StorageHDD/setups-linux/pipe-tts-train/piper_training_work/voice_e4c54f9b/lightning_logs/version_17/hparams.yaml
+/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/trainer/connectors/data_connector.py:224: PossibleUserWarning: The dataloader, train_dataloader, does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` (try 16 which is the number of cpus on this machine) in the `DataLoader` init to improve performance.
+  rank_zero_warn(
+Training: 0it [00:00, ?it/s]Training:   0%|          | 0/291 [00:00<?, ?it/s]Epoch 0:   0%|          | 0/291 [00:00<?, ?it/s] [2026-04-05T21:46:01.991287] INFO: Ctrl+C detectado. Encerrando treino atual e seguindo para export.
+
+[2026-04-05T21:46:53.842300] CMD: /home/StorageHDD/setups-linux/pipe-tts-train/.venv/bin/python -m piper_train --dataset-dir /home/StorageHDD/setups-linux/pipe-tts-train/piper_training_work/voice_e4c54f9b --accelerator gpu --devices 1 --gpus 1 --batch-size 32 --max_epochs 2000 --num_sanity_val_steps 0 --limit_val_batches 0 --validation-split 0 --num-test-examples 0 --precision 16
+DEBUG:piper_train:Namespace(dataset_dir='/home/StorageHDD/setups-linux/pipe-tts-train/piper_training_work/voice_e4c54f9b', checkpoint_epochs=None, quality='medium', resume_from_single_speaker_checkpoint=None, logger=True, enable_checkpointing=True, default_root_dir=None, gradient_clip_val=None, gradient_clip_algorithm=None, num_nodes=1, num_processes=None, devices='1', gpus=1, auto_select_gpus=None, tpu_cores=None, ipus=None, enable_progress_bar=True, overfit_batches=0.0, track_grad_norm=-1, check_val_every_n_epoch=1, fast_dev_run=False, accumulate_grad_batches=None, max_epochs=2000, min_epochs=None, max_steps=-1, min_steps=None, max_time=None, limit_train_batches=None, limit_val_batches=0, limit_test_batches=None, limit_predict_batches=None, val_check_interval=None, log_every_n_steps=50, accelerator='gpu', strategy=None, sync_batchnorm=False, precision=16, enable_model_summary=True, num_sanity_val_steps=0, resume_from_checkpoint=None, profiler=None, benchmark=None, reload_dataloaders_every_n_epochs=0, auto_lr_find=False, replace_sampler_ddp=True, detect_anomaly=False, auto_scale_batch_size=False, plugins=None, amp_backend=None, amp_level=None, move_metrics_to_cpu=False, multiple_trainloader_mode='max_size_cycle', inference_mode=True, batch_size=32, validation_split=0, num_test_examples=0, max_phoneme_ids=None, hidden_channels=192, inter_channels=192, filter_channels=768, n_layers=6, n_heads=2, seed=1234)
+/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/trainer/connectors/accelerator_connector.py:478: LightningDeprecationWarning: Setting `Trainer(gpus=1)` is deprecated in v1.7 and will be removed in v2.0. Please use `Trainer(accelerator='gpu', devices=1)` instead.
+  rank_zero_deprecation(
+/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/trainer/connectors/accelerator_connector.py:498: UserWarning: The flag `devices=1` will be ignored, instead the device specific number 1 will be used
+  rank_zero_warn(
+Using 16bit None Automatic Mixed Precision (AMP)
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/trainer/connectors/logger_connector/logger_connector.py:67: UserWarning: Starting from v1.9.0, `tensorboardX` has been removed as a dependency of the `pytorch_lightning` package, due to potential conflicts with other packages in the ML ecosystem. For this reason, `logger=True` will use `CSVLogger` as the default logger, unless the `tensorboard` or `tensorboardX` packages are found. Please `pip install lightning[extra]` or one of them to enable TensorBoard support by default
+  warning_cache.warn(
+DEBUG:vits.dataset:Loading dataset: /home/StorageHDD/setups-linux/pipe-tts-train/piper_training_work/voice_e4c54f9b/dataset.jsonl
+You are using a CUDA device ('AMD Radeon RX 7800 XT') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+  | Name    | Type                     | Params
+-----------------------------------------------------
+0 | model_g | SynthesizerTrn           | 23.7 M
+1 | model_d | MultiPeriodDiscriminator | 46.7 M
+-----------------------------------------------------
+70.4 M    Trainable params
+0         Non-trainable params
+70.4 M    Total params
+140.822   Total estimated model params size (MB)
+DEBUG:fsspec.local:open file: /home/StorageHDD/setups-linux/pipe-tts-train/piper_training_work/voice_e4c54f9b/lightning_logs/version_18/hparams.yaml
+/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/pytorch_lightning/trainer/connectors/data_connector.py:224: PossibleUserWarning: The dataloader, train_dataloader, does not have many workers which may be a bottleneck. Consider increasing the value of the `num_workers` argument` (try 16 which is the number of cpus on this machine) in the `DataLoader` init to improve performance.
+  rank_zero_warn(
+Training: 0it [00:00, ?it/s]Training:   0%|          | 0/291 [00:00<?, ?it/s]Epoch 0:   0%|          | 0/291 [00:00<?, ?it/s] 

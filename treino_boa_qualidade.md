@@ -1,0 +1,1 @@
+python treinar_vozes_piper.py --max-epochs-cap 2000 --max-train-hours 2 --batch-size 32 --preprocess-max-workers 16

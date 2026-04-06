@@ -1,0 +1,20 @@
+{
+  "language": {
+    "code": "pt-br",
+    "name_native": "Português Brasileiro",
+    "name_english": "Brazilian Portuguese"
+  },
+  "audio": {
+    "sample_rate": 22050
+  },
+  "dataset": {
+    "format": "ljspeech",
+    "metadata_file": "metadata.csv",
+    "wavs_dir": "wavs"
+  },
+  "training": {
+    "batch_size": 32,
+    "max_epochs": 10000,
+    "min_phrases_recommended": 500
+  }
+}

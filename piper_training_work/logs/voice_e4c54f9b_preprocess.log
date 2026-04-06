@@ -1,0 +1,15 @@
+
+[2026-04-05T21:38:02.595096] CMD: /home/StorageHDD/setups-linux/pipe-tts-train/.venv/bin/python -m piper_train.preprocess --language pt-br --input-dir /home/StorageHDD/setups-linux/pipe-tts-train/piper_dataset_por_voz/voice_e4c54f9b --output-dir /home/StorageHDD/setups-linux/pipe-tts-train/piper_training_work/voice_e4c54f9b --dataset-format ljspeech --sample-rate 22050 --max-workers 4
+INFO:preprocess:Single speaker dataset
+INFO:preprocess:Wrote dataset config
+INFO:preprocess:Processing 9294 utterance(s) with 4 worker(s)
+
+[2026-04-05T21:39:57.374969] CMD: /home/StorageHDD/setups-linux/pipe-tts-train/.venv/bin/python -m piper_train.preprocess --language pt-br --input-dir /home/StorageHDD/setups-linux/pipe-tts-train/piper_dataset_por_voz/voice_e4c54f9b --output-dir /home/StorageHDD/setups-linux/pipe-tts-train/piper_training_work/voice_e4c54f9b --dataset-format ljspeech --sample-rate 22050 --max-workers 4
+INFO:preprocess:Single speaker dataset
+INFO:preprocess:Wrote dataset config
+INFO:preprocess:Processing 9294 utterance(s) with 4 worker(s)
+
+[2026-04-05T21:46:47.840178] CMD: /home/StorageHDD/setups-linux/pipe-tts-train/.venv/bin/python -m piper_train.preprocess --language pt-br --input-dir /home/StorageHDD/setups-linux/pipe-tts-train/piper_dataset_por_voz/voice_e4c54f9b --output-dir /home/StorageHDD/setups-linux/pipe-tts-train/piper_training_work/voice_e4c54f9b --dataset-format ljspeech --sample-rate 22050 --max-workers 16
+INFO:preprocess:Single speaker dataset
+INFO:preprocess:Wrote dataset config
+INFO:preprocess:Processing 9294 utterance(s) with 16 worker(s)

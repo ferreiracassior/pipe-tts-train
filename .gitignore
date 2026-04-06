@@ -1,0 +1,15 @@
+# Audio artifacts
+*.mp3
+*.wav
+
+# IA Training artifacts
+*.pt
+*.spec.pt
+*.tsv
+
+# Python virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]

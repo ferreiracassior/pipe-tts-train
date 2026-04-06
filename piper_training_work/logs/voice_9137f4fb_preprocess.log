@@ -1,0 +1,14 @@
+
+[2026-04-05T21:38:16.600582] CMD: /home/StorageHDD/setups-linux/pipe-tts-train/.venv/bin/python -m piper_train.preprocess --language pt-br --input-dir /home/StorageHDD/setups-linux/pipe-tts-train/piper_dataset_por_voz/voice_9137f4fb --output-dir /home/StorageHDD/setups-linux/pipe-tts-train/piper_training_work/voice_9137f4fb --dataset-format ljspeech --sample-rate 22050 --max-workers 4
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/piper-src/src/python/piper_train/preprocess.py", line 28, in <module>
+    from .norm_audio import cache_norm_audio, make_silence_detector
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/piper-src/src/python/piper_train/norm_audio/__init__.py", line 6, in <module>
+    import torch
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/torch/__init__.py", line 1804, in <module>
+    from torch import optim as optim
+  File "/home/StorageHDD/setups-linux/pipe-tts-train/.venv/lib/python3.12/site-packages/torch/optim/__init__.py", line 13, in <module>
+    from .adamax import Adamax
+KeyboardInterrupt
